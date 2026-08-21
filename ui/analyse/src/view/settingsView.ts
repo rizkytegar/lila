@@ -104,7 +104,7 @@ export async function showSettingsDialog(ctrl: AnalyseCtrl): Promise<Dialog> {
   return domDialog({
     class: 'analysis-settings-dialog',
     htmlText: '<h2>Analysis settings</h2>',
-    append: [{ node: settingsView(ctrl.settings) }],
+    insert: [{ node: settingsView(ctrl.settings) }],
     modal: !isTouchDevice(),
     easyClose: 'clickOutside',
     show: true,
@@ -175,7 +175,7 @@ function setupTouchHelp(view: HTMLElement) {
 
 function setupHoverHelp(view: HTMLElement) {
   const helpEl = () => view.querySelector<HTMLElement>('.help-container')!.firstElementChild!;
-  const helpPanes = { keyboardHelp: helpEl() } as Record<string, Element>;
+  const helpPanes: Record<string, Element> = { keyboardHelp: helpEl() };
 
   let hoverTimeout: number;
   view.querySelectorAll<HTMLElement>('.hover-help').forEach(el => {

@@ -26,6 +26,7 @@ object http:
   private val reqTime = timer("http.time")
   private val reqCount = counter("http.count")
   private val mobCount = counter("http.mobile.count")
+  private val agentCount = counter("http.agent.count")
 
   def time(action: String) = reqTime.withTag("action", action)
 
@@ -45,6 +46,9 @@ object http:
         "auth" -> (if auth then "auth" else "anon"),
         "os" -> os
       )
+
+  def apiAgentCount(action: String, agent: String) =
+    agentCount.withTags(tags("action" -> action, "agent" -> agent))
 
   def path(p: String) = counter("http.path.count").withTag("path", p.escape)
   val userGamesCost = counter("http.userGames.cost").withoutTags()
@@ -343,6 +347,7 @@ object email:
     private val c = counter("email.send")
     val resetPassword = c.withTag("type", "resetPassword")
     val magicLink = c.withTag("type", "magicLink")
+    val storedCode = c.withTag("type", "storedCode")
     val reopen = c.withTag("type", "reopen")
     val fix = c.withTag("type", "fix")
     val change = c.withTag("type", "change")
@@ -363,6 +368,8 @@ object security:
       counter("security.proxy.hit").withTags(tags("proxy" -> prox, "action" -> action))
   def rateLimit(key: String) = counter("security.rateLimit.count").withTag("key", key)
   def concurrencyLimit(key: String) = counter("security.concurrencyLimit.count").withTag("key", key)
+  def concurrencyLevel(key: String, client: String) =
+    gauge("security.concurrencyLimit.level").withTags(tags("key" -> key, "client" -> client))
   object dnsApi:
     val mx = future("security.dnsApi.mx.time")
   object verifyMailApi:
@@ -496,10 +503,8 @@ object forum:
     val view = counter("forum.topic.view").withoutTags()
   def reaction(r: String) = counter("forum.reaction").withTag("reaction", r)
 object msg:
-  def post(verdict: String, isNew: Boolean, multi: Boolean) = counter("msg.post").withTags(
+  def post(verdict: String, isNew: Boolean, multi: Boolean) = counter("msg.post").withTags:
     tags("verdict" -> verdict, "isNew" -> isNew, "multi" -> multi)
-  )
-  val teamBulk = histogram("msg.bulk.team").withoutTags()
   def clasBulk(clasId: ClasId) = histogram("msg.bulk.clas").withTag("id", clasId.value)
 object puzzle:
   object selector:
@@ -629,6 +634,7 @@ object push:
     val invitedStudy = send("invitedStudy")
     val streamStart = send("streamStart")
     val broadcastRound = send("broadcastRound")
+    val recap = send("recap")
 
     object challenge:
       val create = send("challengeCreate")
@@ -746,6 +752,9 @@ object signedClient:
       counter(s"signedClient.$name.step").withTags(tags("client" -> client, "step" -> s))
     def failure(reason: String)(client: String) =
       counter(s"signedClient.$name.failure").withTags(tags("client" -> client, "reason" -> reason))
+    def formError(keys: Seq[String], messages: Seq[String])(client: String) =
+      counter(s"signedClient.$name.formError").withTags:
+        tags("client" -> client, "key" -> keys.mkString(","), "msg" -> messages.mkString(","))
     def alreadyLoggedIn(client: String, loggedIn: Boolean) =
       counter(s"signedClient.$name.alreadyLoggedIn").withTags:
         tags("client" -> client, "loggedIn" -> loggedIn)
